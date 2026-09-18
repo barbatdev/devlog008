@@ -1,8 +1,9 @@
 <script lang="ts">
+	// Migration of WIN_Products with the RefactorIA design system.
 	import ProductForm from '$lib/components/ProductForm.svelte';
 
-	function onSaved(): void {
-		window.location.href = '/products';
+	function onSaved(id: number): void {
+		window.location.href = `/products?saved=${id}`;
 	}
 </script>
 
@@ -13,9 +14,11 @@
 
 <style>
 	main {
-		font-family: system-ui, sans-serif;
-		max-width: 640px;
-		margin: 2rem auto;
-		padding: 0 1rem;
+		max-width: 520px;
+		margin: 0 auto;
+	}
+	h1 {
+		font-size: 1.35rem;
+		margin-bottom: var(--space-6);
 	}
 </style>

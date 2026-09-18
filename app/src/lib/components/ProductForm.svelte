@@ -1,84 +1,181 @@
 <script lang="ts">
-	// Migration of WIN_Product: product create/modify form.
-	// BTN_OK serializes the screen to JSON and calls addProduct/modifyProduct
-	// (POST /api/product or PUT /api/product/[id]).
+	// Migration of WIN_Product with the RefactorIA design system:
+	// inline validation, brand focus rings, saving spinner and toast rewards.
+	import { get } from 'svelte/store';
 	import type { Product } from '$lib/types';
+	import { showToast } from '$lib/stores/toast';
+	import { formatPrice } from '$lib/utils/format';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
-	let { product = null, onSaved }: { product?: Product | null; onSaved?: () => void } = $props();
+	let { product = null, onSaved }: { product?: Product | null; onSaved?: (id: number) => void } = $props();
 
 	let name = $state(product?.name ?? '');
 	let description = $state(product?.description ?? '');
-	let price = $state(product?.price ?? 0);
+	let price = $state<number | null>(product?.price ?? null);
 	let isActive = $state(product?.isActive ?? true);
-	let error = $state('');
+	let saving = $state(false);
+	let serverError = $state('');
+
+	let touchedName = $state(false);
+
+	const nameError = $derived(touchedName && name.trim().length === 0 ? 'Name is required.' : '');
+	const priceError = $derived(
+		price === null || price <= 0 ? 'Price must be greater than zero.' : ''
+	);
+	const formValid = $derived(name.trim().length > 0 && price !== null && price > 0);
 
 	async function save(): Promise<void> {
-		error = '';
-		const body = JSON.stringify({ name, description, price, isActive });
+		if (!formValid || saving) return;
+		saving = true;
+		serverError = '';
+		const body = JSON.stringify({ name: name.trim(), description, price, isActive });
 		const isNew = product === null;
 		const res = await fetch(isNew ? '/api/product' : `/api/product/${product!.IDproduct}`, {
 			method: isNew ? 'POST' : 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body
 		});
+		saving = false;
 		if (res.ok) {
-			onSaved?.();
+			const saved: Product = await res.json();
+			// User reward: toast confirmation.
+			showToast(isNew ? 'Product created' : 'Product saved');
+			onSaved?.(saved.IDproduct);
 		} else {
-			error = `Error ${res.status}: could not save the product.`;
+			serverError = `Error ${res.status}: could not save the product.`;
 		}
 	}
+
+	let preview = $derived(price !== null && price > 0 ? formatPrice(price) : '—');
 </script>
 
-<form onsubmit={(e) => { e.preventDefault(); save(); }}>
-	{#if product}
-		<p>IDproduct: {product.IDproduct}</p>
-	{/if}
-	<label>
-		Name
-		<input bind:value={name} required />
-	</label>
-	<label>
-		Description
-		<textarea bind:value={description}></textarea>
-	</label>
-	<label>
-		Price
-		<input type="number" step="0.01" bind:value={price} required />
-	</label>
-	<label class="checkbox">
-		<input type="checkbox" bind:checked={isActive} /> IsActive
-	</label>
-	{#if error}
-		<p class="error">{error}</p>
-	{/if}
-	<div class="actions">
-		<button type="submit">OK</button>
-		<a href="/products"><button type="button">Cancel</button></a>
-	</div>
-</form>
+<Card>
+	<form onsubmit={(e) => { e.preventDefault(); save(); }} novalidate>
+		{#if product}
+			<p class="id">IDproduct: <strong>{product.IDproduct}</strong></p>
+		{/if}
+
+		<label>
+			Name
+			<input
+				bind:value={name}
+				class:invalid={nameError}
+				onblur={() => (touchedName = true)}
+				placeholder="e.g. pantalla 24"
+			/>
+			{#if nameError}<span class="error">{nameError}</span>{/if}
+		</label>
+
+		<label>
+			Description
+			<textarea bind:value={description} rows="3" placeholder="Optional details"></textarea>
+		</label>
+
+		<label>
+			Price
+			<input
+				type="number"
+				step="0.01"
+				min="0"
+				bind:value={price}
+				class:invalid={price !== null && price <= 0}
+				placeholder="0.00"
+			/>
+			{#if price !== null && price <= 0}<span class="error">Price must be greater than zero.</span>{/if}
+			<span class="preview">{preview}</span>
+		</label>
+
+		<label class="checkbox">
+			<input type="checkbox" bind:checked={isActive} /> IsActive
+		</label>
+
+		{#if serverError}
+			<p class="error" role="alert">{serverError}</p>
+		{/if}
+
+		<div class="actions">
+			<Button type="submit" variant="primary" disabled={saving || !formValid}>
+				{#if saving}
+					<span class="spinner" aria-hidden="true"></span> Saving…
+				{:else}
+					Save
+				{/if}
+			</Button>
+			<a href="/products"><Button variant="subtle">Cancel</Button></a>
+		</div>
+	</form>
+</Card>
 
 <style>
 	form {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-		max-width: 420px;
+		gap: var(--space-4);
+	}
+	.id {
+		margin: 0;
+		color: var(--muted);
+		font-size: 0.85rem;
 	}
 	label {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: var(--space-1);
+		font-weight: 500;
+		color: var(--light-300);
+		font-size: 0.85rem;
 	}
-	label.checkbox {
+	input,
+	textarea {
+		font: inherit;
+		color: var(--light-100);
+		background: var(--dark-900);
+		border: 1px solid var(--dark-700);
+		border-radius: var(--radius-md);
+		padding: var(--space-2) var(--space-3);
+		outline: none;
+		transition:
+			border-color var(--speed-fast) var(--ease-out),
+			box-shadow var(--speed-fast) var(--ease-out);
+	}
+	input:focus,
+	textarea:focus {
+		border-color: var(--brand-500);
+		box-shadow: var(--shadow-glow);
+	}
+	input.invalid {
+		border-color: var(--danger);
+	}
+	.checkbox {
 		flex-direction: row;
 		align-items: center;
-		gap: 0.5rem;
+		gap: var(--space-2);
+	}
+	.error {
+		color: var(--danger);
+		font-size: 0.8rem;
+	}
+	.preview {
+		color: var(--muted);
+		font-size: 0.8rem;
 	}
 	.actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
+		margin-top: var(--space-2);
 	}
-	.error {
-		color: #b00020;
+	.spinner {
+		width: 14px;
+		height: 14px;
+		border: 2px solid rgba(255, 255, 255, 0.35);
+		border-top-color: var(--light-100);
+		border-radius: 50%;
+		animation: spin 0.7s linear infinite;
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
