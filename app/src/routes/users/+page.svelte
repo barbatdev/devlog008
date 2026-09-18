@@ -1,19 +1,30 @@
 <script lang="ts">
-	// Migration of WIN_JSONS: users table from dummyjson.com and the
-	// Map / Filter / Reduce / Combine demo (classic and lambda versions).
+	// Migration of WIN_JSONS with the RefactorIA design system:
+	// Map / Filter / Reduce / Combine demo with staggered output animation.
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import type { User } from '$lib/types';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Table from '$lib/components/ui/Table.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let users: User[] = $state([]);
+	let loading = $state(true);
 	let output: string[] = $state([]);
+	let outputKey = $state(0);
 
-	// Equivalent of the getUsers window procedure.
 	async function getUsers(): Promise<void> {
 		const res = await fetch('https://dummyjson.com/users');
 		if (res.ok) {
 			const json = await res.json();
 			users = json.users;
 		}
+		loading = false;
+	}
+
+	function setOutput(lines: string[]): void {
+		output = lines;
+		outputKey++;
 	}
 
 	// --- BTN_MAP: classic (getIPAddress) and lambda versions ---
@@ -21,10 +32,10 @@
 		function getIPAddress(user: User): string {
 			return user.ip;
 		}
-		output = users.map(getIPAddress);
+		setOutput(users.map(getIPAddress));
 	}
 	function mapLambda(): void {
-		output = users.map((user) => `IP Address: ${user.ip}`);
+		setOutput(users.map((user) => `IP Address: ${user.ip}`));
 	}
 
 	// --- BTN_FILTER: classic (filterUsers) and lambda versions ---
@@ -32,12 +43,14 @@
 		function filterUsers(user: User): boolean {
 			return user.gender === 'male' && user.eyeColor === 'Green';
 		}
-		output = users.filter(filterUsers).map((u) => `${u.firstName} ${u.lastName}`);
+		setOutput(users.filter(filterUsers).map((u) => `${u.firstName} ${u.lastName}`));
 	}
 	function filterLambda(): void {
-		output = users
-			.filter((user) => user.gender === 'male' && user.eyeColor === 'Green')
-			.map((u) => `${u.firstName} ${u.lastName}`);
+		setOutput(
+			users
+				.filter((user) => user.gender === 'male' && user.eyeColor === 'Green')
+				.map((u) => `${u.firstName} ${u.lastName}`)
+		);
 	}
 
 	// --- BTN_REDUCE: classic (_reduce) and lambda versions ---
@@ -45,21 +58,21 @@
 		function reduce(maxAge: number, user: User): number {
 			return Math.max(user.age, maxAge);
 		}
-		output = [String(users.reduce(reduce, 0))];
+		setOutput([`Max age: ${users.reduce(reduce, 0)}`]);
 	}
 	function reduceLambda(): void {
-		output = [String(users.reduce((maxAge, user) => Math.max(user.age, maxAge), 0))];
+		setOutput([`Max age: ${users.reduce((maxAge, user) => Math.max(user.age, maxAge), 0)}`]);
 	}
 
-	// --- BTN_COMBINE: filter + reduce chained (lambda version in the original) ---
+	// --- BTN_COMBINE: filter + reduce chained ---
 	function combineLambda(): void {
 		const result = users
 			.filter((user) => user.gender === 'male' && user.eyeColor === 'Amber')
 			.reduce((maxAge, user) => Math.max(user.age, maxAge), 0);
-		output = [String(result)];
+		setOutput([`Max age (male, Amber): ${result}`]);
 	}
 
-	const columns: { key: keyof User | 'hair_color' | 'hair_type'; label: string }[] = [
+	const columns: { key: string; label: string }[] = [
 		{ key: 'id', label: 'Id' },
 		{ key: 'firstName', label: 'First name' },
 		{ key: 'lastName', label: 'Last name' },
@@ -69,7 +82,6 @@
 		{ key: 'email', label: 'Email' },
 		{ key: 'phone', label: 'Phone' },
 		{ key: 'username', label: 'Username' },
-		{ key: 'password', label: 'Password' },
 		{ key: 'birthDate', label: 'Birth date' },
 		{ key: 'bloodGroup', label: 'Blood group' },
 		{ key: 'height', label: 'Height' },
@@ -80,8 +92,7 @@
 		{ key: 'domain', label: 'Domain' },
 		{ key: 'ip', label: 'IP' },
 		{ key: 'macAddress', label: 'MAC address' },
-		{ key: 'university', label: 'University' },
-		{ key: 'userAgent', label: 'User agent' }
+		{ key: 'university', label: 'University' }
 	];
 
 	function cell(user: User, key: string): string {
@@ -96,78 +107,100 @@
 </script>
 
 <main>
-	<h1>Users (JSON demo)</h1>
+	<header>
+		<h1>Users <span class="accent">— JSON demo</span></h1>
+		<p class="muted">Map · Filter · Reduce · Combine, classic and lambda versions (WLanguage migration)</p>
+	</header>
 
-	<div class="actions">
-		<button onclick={mapClassic}>Map (classic)</button>
-		<button onclick={mapLambda}>Map (lambda)</button>
-		<button onclick={filterClassic}>Filter (classic)</button>
-		<button onclick={filterLambda}>Filter (lambda)</button>
-		<button onclick={reduceClassic}>Reduce (classic)</button>
-		<button onclick={reduceLambda}>Reduce (lambda)</button>
-		<button onclick={combineLambda}>Combine</button>
-	</div>
+	<Card>
+		<div class="actions">
+			<Button variant="subtle" onclick={mapClassic}>Map · classic</Button>
+			<Button variant="subtle" onclick={mapLambda}>Map · lambda</Button>
+			<Button variant="subtle" onclick={filterClassic}>Filter · classic</Button>
+			<Button variant="subtle" onclick={filterLambda}>Filter · lambda</Button>
+			<Button variant="subtle" onclick={reduceClassic}>Reduce · classic</Button>
+			<Button variant="subtle" onclick={reduceLambda}>Reduce · lambda</Button>
+			<Button variant="primary" onclick={combineLambda}>⚡ Combine</Button>
+		</div>
 
-	{#if output.length > 0}
-		<section>
-			<h2>Output</h2>
-			<ul>
-				{#each output as line}
-					<li>{line}</li>
-				{/each}
-			</ul>
-		</section>
-	{/if}
-
-	<div class="table-wrap">
-		<table>
-			<thead>
-				<tr>
-					{#each columns as col}
-						<th>{col.label}</th>
+		{#if output.length > 0}
+			<ul class="output" in:fly={{ y: 8, duration: 250 }}>
+				{#key outputKey}
+					{#each output as line, i (i)}
+						<li in:fly={{ y: 10, delay: i * 40, duration: 300 }}>{line}</li>
 					{/each}
-				</tr>
-			</thead>
-			<tbody>
-				{#each users as user (user.id)}
+				{/key}
+			</ul>
+		{:else}
+			<p class="muted hint">Run one of the operations above to see results here.</p>
+		{/if}
+	</Card>
+
+	<Card>
+		{#if loading}
+			<p class="muted">Loading users…</p>
+		{:else}
+			<Table>
+				<thead>
 					<tr>
 						{#each columns as col}
-							<td>{cell(user, col.key as string)}</td>
+							<th>{col.label}</th>
 						{/each}
 					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-
-	<p><a href="/">Home</a></p>
+				</thead>
+				<tbody>
+					{#each users as user (user.id)}
+						<tr>
+							{#each columns as col}
+								<td>{cell(user, col.key)}</td>
+							{/each}
+						</tr>
+					{/each}
+				</tbody>
+			</Table>
+		{/if}
+	</Card>
 </main>
 
 <style>
-	main {
-		font-family: system-ui, sans-serif;
-		max-width: 1400px;
-		margin: 2rem auto;
-		padding: 0 1rem;
+	header {
+		margin-bottom: var(--space-6);
+	}
+	h1 {
+		margin: 0 0 var(--space-1);
+		font-size: 1.5rem;
+	}
+	.accent {
+		color: var(--brand-500);
+		font-weight: 400;
+	}
+	.muted {
+		color: var(--muted);
 	}
 	.actions {
 		display: flex;
-		gap: 0.5rem;
+		gap: var(--space-2);
 		flex-wrap: wrap;
-		margin-bottom: 1rem;
+		margin-bottom: var(--space-4);
 	}
-	.table-wrap {
-		overflow-x: auto;
+	.output {
+		list-style: none;
+		margin: 0;
+		padding: var(--space-3) var(--space-4);
+		background: var(--dark-900);
+		border: 1px solid var(--dark-700);
+		border-radius: var(--radius-md);
+		max-height: 220px;
+		overflow-y: auto;
+		font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+		font-size: 0.8rem;
+		color: var(--light-300);
 	}
-	table {
-		border-collapse: collapse;
-		font-size: 0.75rem;
-		white-space: nowrap;
+	.hint {
+		text-align: center;
+		padding: var(--space-4);
 	}
-	th,
-	td {
-		border: 1px solid #ddd;
-		padding: 0.3rem 0.5rem;
-		text-align: left;
+	main :global(.card + .card) {
+		margin-top: var(--space-6);
 	}
 </style>
