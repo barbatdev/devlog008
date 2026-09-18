@@ -1,0 +1,85 @@
+/* Design tokens extracted from the official RefactorIA palette
+   (refactoria.dev CSS custom properties) + supporting scales. */
+
+:root {
+	/* Brand */
+	--brand-500: #7127ff;
+	--brand-600: #5c1fd6;
+	--brand-tint: rgba(113, 39, 255, 0.16);
+
+	/* Dark surfaces */
+	--dark-900: #0b0714;
+	--dark-800: #17102a;
+	--dark-700: #2c2144;
+
+	/* Light text */
+	--light-100: #ffffff;
+	--light-200: #ebebeb;
+	--light-300: #f2effa;
+	--muted: rgba(235, 235, 235, 0.55);
+
+	/* Feedback */
+	--success: #2ecc8f;
+	--danger: #ff5470;
+
+	/* Radii & shadows */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+	--shadow-glow: 0 0 0 3px rgba(113, 39, 255, 0.35);
+
+	/* Spacing scale */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-6: 1.5rem;
+	--space-8: 2rem;
+
+	/* Motion */
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--speed-fast: 150ms;
+	--speed-med: 300ms;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--dark-900);
+	color: var(--light-200);
+	font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	font-size: 15px;
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+	color: var(--light-100);
+	line-height: 1.2;
+}
+
+a {
+	color: var(--light-200);
+	text-decoration: none;
+	transition: color var(--speed-fast) var(--ease-out);
+}
+
+a:hover {
+	color: var(--light-100);
+}
+
+::selection {
+	background: var(--brand-tint);
+	color: var(--light-100);
+}
