@@ -38,12 +38,16 @@ export const GET: RequestHandler = async ({ params }) => {
 		return json({ error: 'Not found' }, { status: 404 });
 	}
 
-	const row = findProduct(id);
-	if (!row) {
-		return json({ error: 'Not found' }, { status: 404 });
-	}
+	try {
+		const row = findProduct(id);
+		if (!row) {
+			return json({ error: 'Not found' }, { status: 404 });
+		}
 
-	return json(toProduct(row));
+		return json(toProduct(row));
+	} catch {
+		return json({ error: 'Internal server error' }, { status: 500 });
+	}
 };
 
 export const PUT: RequestHandler = async ({ params, request }) => {
@@ -64,12 +68,12 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		return json({ error: 'Invalid format.' }, { status: 422 });
 	}
 
-	const existing = findProduct(id);
-	if (!existing) {
-		return json({ error: 'Not found' }, { status: 404 });
-	}
-
 	try {
+		const existing = findProduct(id);
+		if (!existing) {
+			return json({ error: 'Not found' }, { status: 404 });
+		}
+
 		db.prepare('UPDATE product SET name = ?, description = ?, price = ?, isActive = ? WHERE IDproduct = ?')
 			.run(data.name, data.description, data.price, data.isActive ? 1 : 0, id);
 		const row = findProduct(id) as ProductRow;
