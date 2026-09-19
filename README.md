@@ -93,7 +93,7 @@ cd app && npm test
 
 ## License
 
-License: TBD
+[MIT](LICENSE) © refactor-ia
 
 ## Credits
 
