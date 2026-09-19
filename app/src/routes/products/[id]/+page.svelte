@@ -7,15 +7,24 @@
 
 	let product: Product | null = $state(null);
 	let notFound = $state(false);
+	let errorMessage = $state('');
 
 	$effect(() => {
 		fetch(`/api/product/${params.id}`)
 			.then((res) => {
+				if (res.status === 404) {
+					notFound = true;
+					return null;
+				}
 				if (!res.ok) throw new Error(String(res.status));
 				return res.json();
 			})
-			.then((data: Product) => (product = data))
-			.catch(() => (notFound = true));
+			.then((data: Product | null) => {
+				if (data) product = data;
+			})
+			.catch(() => {
+				errorMessage = 'Could not load the product. Please try again later.';
+			});
 	});
 
 	function onSaved(id: number): void {
@@ -27,6 +36,8 @@
 	<h1>Modify product</h1>
 	{#if notFound}
 		<p class="error">Product not found (404).</p>
+	{:else if errorMessage}
+		<p class="error" role="alert">{errorMessage}</p>
 	{:else if product}
 		<ProductForm {product} onSaved={onSaved} />
 	{:else}

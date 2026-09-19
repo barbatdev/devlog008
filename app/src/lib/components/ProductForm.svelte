@@ -17,13 +17,32 @@
 	let saving = $state(false);
 	let serverError = $state('');
 
+	const NAME_MAX_LENGTH = 50;
+
 	let touchedName = $state(false);
 
-	const nameError = $derived(touchedName && name.trim().length === 0 ? 'Name is required.' : '');
-	const priceError = $derived(
-		price === null || price <= 0 ? 'Price must be greater than zero.' : ''
+	const nameError = $derived(
+		touchedName && name.trim().length === 0
+			? 'Name is required.'
+			: touchedName && name.trim().length > NAME_MAX_LENGTH
+				? `Name must be ${NAME_MAX_LENGTH} characters or fewer.`
+				: ''
 	);
-	const formValid = $derived(name.trim().length > 0 && price !== null && price > 0);
+	// Client rules mirror the server (validateProductBody): finite, > 0, max 6 decimals.
+	const priceError = $derived(
+		price === null || price <= 0
+			? 'Price must be greater than zero.'
+			: !Number.isInteger(price * 1e6)
+				? 'Price must have at most 6 decimal places.'
+				: ''
+	);
+	const formValid = $derived(
+		name.trim().length > 0 &&
+			name.trim().length <= NAME_MAX_LENGTH &&
+			price !== null &&
+			price > 0 &&
+			Number.isInteger(price * 1e6)
+	);
 
 	async function save(): Promise<void> {
 		if (!formValid || saving) return;
@@ -31,19 +50,24 @@
 		serverError = '';
 		const body = JSON.stringify({ name: name.trim(), description, price, isActive });
 		const isNew = product === null;
-		const res = await fetch(isNew ? '/api/product' : `/api/product/${product!.IDproduct}`, {
-			method: isNew ? 'POST' : 'PUT',
-			headers: { 'Content-Type': 'application/json' },
-			body
-		});
-		saving = false;
-		if (res.ok) {
-			const saved: Product = await res.json();
-			// User reward: toast confirmation.
-			showToast(isNew ? 'Product created' : 'Product saved');
-			onSaved?.(saved.IDproduct);
-		} else {
-			serverError = `Error ${res.status}: could not save the product.`;
+		try {
+			const res = await fetch(isNew ? '/api/product' : `/api/product/${product!.IDproduct}`, {
+				method: isNew ? 'POST' : 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body
+			});
+			if (res.ok) {
+				const saved: Product = await res.json();
+				// User reward: toast confirmation.
+				showToast(isNew ? 'Product created' : 'Product saved');
+				onSaved?.(saved.IDproduct);
+			} else {
+				serverError = `Error ${res.status}: could not save the product.`;
+			}
+		} catch {
+			serverError = 'Could not save the product. Please try again.';
+		} finally {
+			saving = false;
 		}
 	}
 
@@ -59,12 +83,15 @@
 		<label>
 			Name
 			<input
+				id="product-name"
 				bind:value={name}
 				class:invalid={nameError}
 				onblur={() => (touchedName = true)}
 				placeholder="e.g. pantalla 24"
+				aria-invalid={nameError ? 'true' : undefined}
+				aria-describedby={nameError ? 'product-name-error' : undefined}
 			/>
-			{#if nameError}<span class="error">{nameError}</span>{/if}
+			{#if nameError}<span id="product-name-error" class="error">{nameError}</span>{/if}
 		</label>
 
 		<label>
@@ -75,14 +102,17 @@
 		<label>
 			Price
 			<input
+				id="product-price"
 				type="number"
 				step="0.01"
 				min="0"
 				bind:value={price}
-				class:invalid={price !== null && price <= 0}
+				class:invalid={priceError}
 				placeholder="0.00"
+				aria-invalid={priceError ? 'true' : undefined}
+				aria-describedby={priceError ? 'product-price-error' : undefined}
 			/>
-			{#if price !== null && price <= 0}<span class="error">Price must be greater than zero.</span>{/if}
+			{#if priceError}<span id="product-price-error" class="error">{priceError}</span>{/if}
 			<span class="preview">{preview}</span>
 		</label>
 
@@ -102,7 +132,7 @@
 					Save
 				{/if}
 			</Button>
-			<a href="/products"><Button variant="subtle">Cancel</Button></a>
+			<Button type="button" variant="subtle" onclick={() => (window.location.href = '/products')}>Cancel</Button>
 		</div>
 	</form>
 </Card>
