@@ -1,8 +1,10 @@
 <script lang="ts">
 	import Card from '$lib/components/ui/Card.svelte';
+	import BeardHero from '$lib/components/BeardHero.svelte';
 </script>
 
 <main class="home">
+	<BeardHero />
 	<h1>Refactor<span>izando</span></h1>
 	<p class="muted">WinDev "Refactorizando" project migrated to SvelteKit + SQLite.</p>
 

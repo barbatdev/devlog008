@@ -5,7 +5,10 @@
 </script>
 
 <div class="nav">
-	<a class="brand" href="/">Refactor<span>izando</span></a>
+	<a class="brand" href="/">
+		<img class="mark" src="/beard-logo.svg" alt="" width="22" height="22" />
+		Refactor<span>izando</span>
+	</a>
 	<nav>
 		<a href="/products">Products</a>
 		<a href="/users">Users</a>
@@ -32,10 +35,18 @@
 		border-bottom: 1px solid var(--dark-700);
 	}
 	.brand {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
 		font-weight: 700;
 		font-size: 1.05rem;
 		letter-spacing: -0.01em;
 		color: var(--light-100);
+	}
+	.mark {
+		display: block;
+		border-radius: var(--radius-sm);
+		user-select: none;
 	}
 	.brand span {
 		color: var(--brand-500);
