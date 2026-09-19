@@ -12,7 +12,7 @@ Mode: on (project precedent, red-green-refactor). Runner: `npm test` (vitest) in
 - [x] F3 — Route error consistency: wrap single-product GET and PUT pre-lookup in try/catch returning 500 JSON like sibling handlers.
 - [x] F4 — Error states UI: products list shows error state with retry instead of eternal skeleton on non-OK/failed fetch; edit page distinguishes 404 from other failures; ProductForm handles fetch rejection (try/catch/finally, saving reset, error alert).
 - [x] F5 — A11y high: associate inline validation errors via stable ids + `aria-invalid` + `aria-describedby`; replace anchor-wrapped Cancel with single interactive element; product rows support Space activation and expose selected state (`aria-selected` with grid/option semantics or real control).
-- [ ] F6 — Verification: vitest green (new + existing), svelte-check, build; work-unit commit(s) with Conventional Commit messages; record evidence.
+- [x] F6 — Verification: vitest 34/34, svelte-check 0 errores, build OK; work-unit commits f54a7e8, 8ca0b32, f5c033b (rama master). RDD review del candidato pendiente: bloqueado en esta sesión (schema-incompatible); probar en sesión nueva.
 
 ## Notes
 - Parity oracle: name limit 50 and price scale from migrated WinDev schema (VARCHAR(50), NUMERIC(24,6)).
